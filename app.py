@@ -17,7 +17,17 @@ st.markdown("""
 with st.sidebar:
     st.header("⚙️ Setup")
     api_key = st.text_input("Gemini API Key", type="password")
-    model_choice = st.selectbox("Model", ["gemini-1.5-flash", "gemini-1.5-pro"])
+    
+    # UPDATED: Only models from your available list
+    model_options = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-pro-latest", "Custom..."]
+    model_choice = st.selectbox("Model", model_options)
+    
+    # Allow manual entry if "Custom..." is selected
+    if model_choice == "Custom...":
+        custom_model = st.text_input("Enter Model Name", value="models/gemini-2.0-pro-exp")
+        active_model = custom_model
+    else:
+        active_model = model_choice
     
     st.divider()
     st.subheader("📸 Context")
@@ -53,8 +63,11 @@ def get_gemini_response(user_input, image=None):
     
     # Initialize chat if not exists
     if "chat" not in st.session_state or st.session_state.chat is None:
-        model = genai.GenerativeModel(model_choice, system_instruction=SYSTEM_INSTRUCTION)
-        st.session_state.chat = model.start_chat(history=[])
+        try:
+            model = genai.GenerativeModel(active_model, system_instruction=SYSTEM_INSTRUCTION)
+            st.session_state.chat = model.start_chat(history=[])
+        except Exception as e:
+            return f"❌ Model Error: {str(e)} \n\nTry selecting a different model in the sidebar."
 
     try:
         # If an image is uploaded, we send it along with the text
